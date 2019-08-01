@@ -1,11 +1,12 @@
 ' as of 2:00PM ,   8 /1 / 19 the below works
 '====================================================================================================
 '/// SCRIPT CONTENTS : RUN  WorksheetMgr()  macro to execute this process
-    '//  This is a script is collection of 3 subroutines
+    '//  This is a script is collection of 4 subroutines
         '1)// WorksheetMgr() starts the routine by setting the first worksheet to process, it only runs once
         '2)// then SubTotal_By_Type1() is called to subtotal by type etc...
         '3)// then DoNext() is called to produce small summary table
-        '4)// then SubTotal_By_Type1() and DoNext() toggle between eachother until the process is complete
+        '4)// then MoveToNextSheet() is called to move to the next worksheet unless the process is complete
+        '5)// then SubTotal_By_Type1() , DoNext() , MoveToNextSheet() (toggle between eachother until the process is complete
         ' The code is a bit long AS was to be a template for other subtotal use but then became a bit custom
 '/// SCRIPT SUMMARY :
     '/// THIS SCRIPT ITERATES THROUGH SPECIFIED COLUMN OF DATA AND SUBTOTALS ASSOC DATA IN SUMMARY TABLE
