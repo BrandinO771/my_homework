@@ -1,0 +1,1 @@
+this is my first uploaded file to git hub via coding in git terminal 
