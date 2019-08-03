@@ -1,0 +1,294 @@
+' as of 2:00PM ,   8 /1 / 19 the below works
+'====================================================================================================
+'/// SCRIPT CONTENTS : RUN  WorksheetMgr()  macro to execute this process
+    '//  This is a script is collection of 4 subroutines
+        '1)// WorksheetMgr() starts the routine by setting the first worksheet to process, it only runs once
+        '2)// then SubTotal_By_Type1() is called to subtotal by type etc...
+        '3)// then DoNext() is called to produce small summary table
+        '4)// then MoveToNextSheet() is called to move to the next worksheet unless the process is complete
+        '5)// then SubTotal_By_Type1() , DoNext() , MoveToNextSheet() (toggle between eachother until the process is complete
+        ' The code is a bit long AS was to be a template for other subtotal use but then became a bit custom
+'/// SCRIPT SUMMARY :
+    '/// THIS SCRIPT ITERATES THROUGH SPECIFIED COLUMN OF DATA AND SUBTOTALS ASSOC DATA IN SUMMARY TABLE
+    '/// FOR EACH UNIQUE DATA VALUE FOUND , IN SPECIFIED COLUMN
+    '/// !USER!  SCROLL DOWN AND INSERT VALUES IN THE START FUNCTION BEFORE RUNNING
+    '/// AUTHOR :  BRANDON STEINKE                                                                                                                                                                                                                                                                                                         BRANDON STEINKE
+'====================================================================================================
+ '/////  TO DO'S / NOTES :
+'====================================================================================================
+' Extra) CREATE USER FORM, FOR USER TO FILL IN ALL VALUES TO RUN THIS FUNCTION, IT WOULD BE AN ATTACHED SHEET, WITH LABELED CELLS TO FILL IN
+' 1)DONE 7-29-19 create color quardinated format for yearly change
+' 2)DONE 7-29-19  "Greatest % increase",
+      '  ITERATE THROUGH RESULTS COMPARING IF EACH CELL IS GREATER THAN THE NEXT IF SO THAT IS OUR VALUE IF NOT IT IS NOT , AND PULL IN STOCK TICKER & VAL
+   ' "Greatest % Decrease" and
+       ' ITERATE THROUGH RESULTS COMPARING IF EACH CELL IS LESS THAN THE NEXT IF SO THAT IS OUR VALUE IF NOT IT IS NOT
+    ' "Greatest total volume".
+       ' ITERATE THROUGH RESULTS COMPARING IF EACH CELL IS GREATER THAN THE NEXT IF SO THAT IS OUR VALUE IF NOT IT IS NOT
+ '3) Done 7-30-19 Make the appropriate adjustments to your script that will allow it to run on every worksheet, i.e., every year, just by running it
+ '4.) Done 8-1-19 , Made minor changes 1.) Used LongLong as data type on stockvol 2.) create solution to trully end the all sub routines and print a completion message upon final spreadsheet
+ '=================================
+ ' INITIAL FUNCTION BELOW 
+ '==============================
+ 
+ Sub WorkSheetMgr() '//This runs once to set the first spreadsheet
+        
+        Worksheets(1).Activate
+        Call SubTotal_By_Type1
+
+ End Sub
+
+'====================================================================================================
+Sub SubTotal_By_Type1()
+
+'====================================================================================================
+'//////////////////////////  - VARIABLES - //////////////////////////////////////////////////////////
+'====================================================================================================
+  ' /// UNIQUE VALUE ///  ' variables for holding the uniqueValue
+    Dim uniqueVal         As String 'As Integer  As Long  As Double ' this auto sets by each unique val found in target column
+    Dim uniqVal_TargColum As Integer
+    Dim uniqVal_TargRow   As Long
+    ' /// for stock vol
+    Dim UniqSubSetVal_1_ColumNum   As Integer     '// The column where we search for subset or related values assoc to the unique values
+    Dim UniqSubSetVal_1_Value      As LongLong ' As Double ' '// the values returned in subSetVal1  Column 1
+    'Dim UniqSubSetVal_1_Total      As Currency ' As Double ' '// the Result of computations of data found
+    
+    ' /// for open val
+    Dim UniqSubSetVal_2_ColumNum   As Integer     '// The column where we search for subset or related values assoc to the unique values
+    Dim UniqSubSetVal_2_Value      As Double ''// the values returned in subSetVal2  Column 2
+    'Dim UniqSubSetVal_2_Total      As Double ''// the Result of computations of data found
+    
+    ' for close val
+    Dim UniqSubSetVal_3_ColumNum   As Integer     '// The column where we search for subset or related values assoc to the unique values
+    Dim UniqSubSetVal_3_Value      As Double  ' As Long  As Double '  '// the values returned in subSetVal2  Column 2
+    'Dim UniqSubSetVal_3_Total      As Double ''// the Result of computations of data found
+    
+    ' for per chage
+    Dim UniqSubSetVal_4_ColumNum   As Integer     '// The column where we search for subset or related values assoc to the unique values
+    Dim UniqSubSetVal_4_Value      As Double ' '// the values returned in subSetVal2  Column 2
+    'Dim UniqSubSetVal_4_Total      As Double ''// the Result of computations of data found
+    
+    '   below the two var are combined to target 1 cell ie ,  ("Summ_Table_Column1" & Sumry_Table_Row) // = ("H1")
+    Dim Sumry_Table_Row          As Integer  ' the row location for each unique subtotal in the summary table
+    Dim Sumry_TabL_Colum1_Header  As String   ' the name you give of this column
+    Dim Sumry_TabL_Colum1_num     As Integer   ' the column location for each unique subtotal in the summary table
+    Dim Sumry_TabL_Colum2_Header  As String   ' the name you give of this column
+    Dim Sumry_TabL_Colum2_num     As Integer   ' the column location for each unique subtotal in the summary table
+    Dim Sumry_TabL_Colum3_Header  As String   ' the name you give of this column
+    Dim Sumry_TabL_Colum3_num     As Integer  ' the column location for each unique subtotal in the summary table
+    Dim Sumry_TabL_Colum4_Header  As String   ' the name you give of this column
+    Dim Sumry_TabL_Colum4_num     As Integer    ' the column location for each unique subtotal in the summary table
+    Dim uniqVal_StartRow      As Integer   ' the very first row num we will start looking for unique data matches
+    Dim LastRowOfData         As Long   ' Last row of sheet
+   
+'====================================================================================================
+'///////////////////////    - START FUNCTION - /////insert initial variable value below ////////////
+'====================================================================================================
+    uniqVal_TargColum = 1   ' insert int
+    uniqVal_TargRow = 2      ' insert int '//the first row containing data we are evaluating usually row 2
+    uniqVal_StartRow = 2     ' insert int // the first row containing data we are evaluating usually row 2
+    UniqSubSetVal_1_ColumNum = 7 ' insert int //stock val
+    UniqSubSetVal_2_ColumNum = 3 ' insert int // open val
+    UniqSubSetVal_3_ColumNum = 6 ' insert int // close val
+    Sumry_TabL_Colum1_Header = "Ticker"   ' the name you give of this column
+    Sumry_TabL_Colum1_num = 9    ' instert # for the column , where this summ colum will be placed
+    Sumry_TabL_Colum2_Header = "Total_Stock"   ' the name you give of this column
+    Sumry_TabL_Colum2_num = 12  ' instert num for the column , where this summ colum will be placed
+    Sumry_TabL_Colum3_Header = "Yearly_Change"    ' the name you give of this column
+    Sumry_TabL_Colum3_num = 10   ' instert num for the column , where this summ colum will be placed
+    Sumry_TabL_Colum4_Header = "Percent_Change"     ' the name you give of this column
+    Sumry_TabL_Colum4_num = 11   ' instert num  for the column , where this summ colum will be placed
+    Sumry_Table_Row = 2      ' insert int for first row data is to start populating
+    LastRowOfData = Cells(Rows.Count, 1).End(xlUp).Row + 1 ' this is a native excel calculation insert native formula
+            ' Range("I9").NumberFormat = "#,##0.000000000" '//long with decimals    'Range("H9").NumberFormat = "0.00%" '// percent
+
+'====================================================================================================
+'///////////////////////    - END OF - START FUNC -/////////////////////////////////////////////////////
+'======================================================================================================
+    If (Sumry_TabL_Colum1_num <> 0 And Sumry_TabL_Colum1_Header <> "") Then
+              Cells(1, Sumry_TabL_Colum1_num).Value = Sumry_TabL_Colum1_Header
+    End If
+                       
+    If (Sumry_TabL_Colum2_num <> 0 And Sumry_TabL_Colum2_Header <> "") Then
+              Cells(1, Sumry_TabL_Colum2_num).Value = Sumry_TabL_Colum2_Header
+    End If
+    
+    If (Sumry_TabL_Colum3_num <> 0 And Sumry_TabL_Colum3_Header <> "") Then
+              Cells(1, Sumry_TabL_Colum3_num).Value = Sumry_TabL_Colum3_Header
+    End If
+    
+    If (Sumry_TabL_Colum4_num <> 0 And Sumry_TabL_Colum4_Header <> "") Then
+              Cells(1, Sumry_TabL_Colum4_num).Value = Sumry_TabL_Colum4_Header
+    End If
+'======================================================================================================
+'/////////////////////////      FOR LOOP    ///////////////////////////////////////////////////////////////////
+'======================================================================================================
+                ' remember  Cells(row number , colum number )
+                
+            ' Loop through all Rows with Data in our Unique Value Target Column
+    For uniqVal_TargRow = uniqVal_StartRow To LastRowOfData
+        
+            If uniqVal_TargRow = LastRowOfData Then '//Exit For and Call next func when hit the end column
+            Call DoSecond
+            Exit For
+            End If
+    
+            ' if nxt row matches current row
+        If Cells(uniqVal_TargRow + 1, uniqVal_TargColum).Value <> Cells(uniqVal_TargRow, uniqVal_TargColum).Value Then ' Check if the value found in the next row matches our UniqueValue, if it is not...
+            
+                uniqueVal = Cells(uniqVal_TargRow, uniqVal_TargColum).Value     ' Set the Unique Data's Value
+                UniqSubSetVal_1_Total = UniqSubSetVal_1_Total + Cells(uniqVal_TargRow, UniqSubSetVal_1_ColumNum).Value ' Add to the total_uniq_subSet1 that we have been computing to this point, this is the last value to add to our total before moving on
+                UniqSubSetVal_3_Value = Cells(uniqVal_TargRow, UniqSubSetVal_3_ColumNum).Value ' closing val
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum1_num).Value = uniqueVal         ' Populate the Summary Table with: Each "Unique Data Value" found
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum2_num).Value = UniqSubSetVal_1_Total    ' Populate the Summary Table with: Each "total_uniq_subSet1" for "Unique Data Value" found
+                'Cells(Sumry_Table_Row, Sumry_TabL_Colum2_num).NumberFormat = "0"
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum3_num).Value = UniqSubSetVal_3_Value - UniqSubSetVal_2_Value
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum3_num).NumberFormat = "#,##0.000000000" '//long with decimals
+                
+                    If Cells(Sumry_Table_Row, Sumry_TabL_Colum3_num).Value >= 0 Then '// Color Format results
+                    
+                            Cells(Sumry_Table_Row, Sumry_TabL_Colum3_num).Interior.ColorIndex = 4  'Green
+                    Else
+                            Cells(Sumry_Table_Row, Sumry_TabL_Colum3_num).Interior.ColorIndex = 3  'Red
+                    End If
+                
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum4_num).Value = UniqSubSetVal_3_Value / UniqSubSetVal_2_Value
+                Cells(Sumry_Table_Row, Sumry_TabL_Colum4_num).NumberFormat = "0.00%" '// percent
+                Sumry_Table_Row = Sumry_Table_Row + 1 ' If we find a New Unique Value then dir data to populate in next row below current summ table row
+                UniqSubSetVal_1_Total = 0         ' Reset the Values
+                UniqSubSetVal_2_Total = 0         ' Reset the Values
+        
+        Else  ' if the value found in the next row matches our UniqueValue,
+            
+                UniqSubSetVal_1_Total = UniqSubSetVal_1_Total + Cells(uniqVal_TargRow, UniqSubSetVal_1_ColumNum).Value ' Add to the "total_uniq_subSet1", found in our "target Columnn num" on the "same row as our uniqueVal" found
+            
+                If UniqSubSetVal_2_Value = 0 Then ' this is the opening val
+                
+                        UniqSubSetVal_2_Value = Cells(uniqVal_TargRow, UniqSubSetVal_2_ColumNum).Value
+                End If
+                
+            UniqSubSetVal_3_Value = 0
+    
+        End If
+
+    Next uniqVal_TargRow
+
+End Sub
+
+
+
+Sub DoSecond()
+
+    Dim TickerSymA      As String
+    Dim TickerSymB      As String
+    Dim TickerSymC      As String
+    Dim greatestPerIncrease As Double
+    Dim greatestPerDecrease As Double
+    Dim greatestTotalVol  As LongLong 'As Currency
+    Dim LastRowOfValue  As Long
+    Dim WS_Count        As Integer
+    Dim I               As Integer
+    Dim sheetName       As String
+    Dim WkSheetNum     As Integer
+    
+        j = 2
+     
+    '  IMPORTANT COND BELOW ONLY COUNTS ROWS WITH DATA
+    '  BY USING SHIFT SELECT , SO IF WANT A SUB TABLE IN SHEET WITH MORE DATA THIS IS HOW ITERATE JUST THROUGH SUB TABLE RESULTS
+    LastRowOfValue = Range("I1").CurrentRegion.Rows.Count
+    greatestPerIncrease = Cells(2, 11).Value
+    greatestPerDecrease = Cells(2, 11).Value
+    greatestTotalVol = Cells(2, 12).Value
+    Range("O1") = "Category"
+    Range("P1") = "Ticker"
+    Range("Q1") = "Value"
+    Range("O2") = "Greatest % increase"
+    Range("O3") = "Greatest % Decrease"
+    Range("O4") = "Greatest total volume"
+    Range("M1") = "LastRowOfValue"
+    Range("M2").Value = LastRowOfValue
+          
+        For j = j To LastRowOfValue
+        
+            If greatestPerIncrease <= Cells(j, 11).Value Then
+                greatestPerIncrease = Cells(j, 11).Value
+                TickerSymA = Cells(j, 9).Value
+            End If
+            
+            If greatestPerDecrease >= Cells(j, 11).Value Then
+                greatestPerDecrease = Cells(j, 11).Value
+                TickerSymB = Cells(j, 9).Value
+            End If
+            
+            If greatestTotalVol <= Cells(j, 12).Value Then
+                greatestTotalVol = Cells(j, 12).Value
+                TickerSymC = Cells(j, 9).Value
+            End If
+             
+            If j = LastRowOfValue Then
+                Range("Q2").Value = greatestPerIncrease
+                Range("Q2").NumberFormat = "0.00%"
+                Range("P2").Value = TickerSymA
+                
+                Range("Q3").Value = greatestPerDecrease
+                Range("Q3").NumberFormat = "0.00%"
+                Range("P3").Value = TickerSymB
+                
+                Range("Q4").Value = greatestTotalVol
+                'Range("Q4").NumberFormat = "0"
+                Range("P4").Value = TickerSymC
+                Range("Q5") = "Calculations By Brandon Steinke"
+                Call MoveToNextSheet
+                
+                
+            Exit For
+            End If
+            
+       Next j
+
+       
+End Sub
+
+
+ 
+ Sub MoveToNextSheet()
+ 
+       Dim WkSheetNum As Integer
+       Dim Finish_it As Integer
+       
+       
+           WkSheetNum = ActiveSheet.Index
+           WS_Count = ActiveWorkbook.Worksheets.Count
+           
+           
+          ' MsgBox ("The number of spreadsheets is  : " + Str(WS_Count))
+           
+            If WkSheetNum < WS_Count Then
+            
+            WkSheetNum = WkSheetNum + 1
+            Worksheets(WkSheetNum).Activate
+           ' MsgBox ("I Will Begin Processing The Following WKSheet: " + ActiveSheet.Name)
+
+                 If ActiveSheet.Index = WS_Count Then
+                    Finish_it = 1
+                    Call SubTotal_By_Type1
+                    Exit Sub
+                 End If
+                 
+              Call SubTotal_By_Type1
+              
+            End If
+
+            
+            If ActiveSheet.Index = WS_Count And (Range("Q5") = "Calculations By Brandon Steinke") Then
+
+                 MsgBox ("I Have Completed My Task Master!")
+                 
+            Exit Sub
+            End If
+       
+ 
+ End Sub
+ 
+ 
+       
+
